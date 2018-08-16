@@ -1,0 +1,20 @@
+#!/bin/bash
+getopts ":d:" opt0
+f=$(echo $OPTARG | cut -c 1)
+g=$(printf "%d" "'$f")
+if [ $g -ge 97 ] && [ $g -le 122 ]; then
+	domain=$OPTARG
+	nslookup $domain | awk '{print $2}' | tail -n 2 > /tmp/nslookup.txt
+	ip=$(cat /tmp/nslookup.txt)
+else
+	ip=$OPTARG
+fi
+
+getopts ":p:" opt1
+protocal=$OPTARG
+getopts ":t:" opt2 
+port=$OPTARG
+
+iptables -I OUTPUT -p $protocal -d $ip --dport $port -j ACCEPT
+iptables -I INPUT -p $protocal -s $ip --sport $port -j ACCEPT 
+rm -rf /tmp/nslookup.txt
