@@ -1,20 +1,37 @@
 #!/bin/bash
+#获取第一个参数 opt0
 getopts ":d:" opt0
-f=$(echo $OPTARG | cut -c 1)
-g=$(printf "%d" "'$f")
-if [ $g -ge 97 ] && [ $g -le 122 ]; then
-	domain=$OPTARG
+#获取输入的参数的首字符
+typeset -l var=$OPTARG
+c=$(echo $var | cut -c 1)
+g=$(printf "%d" "'$c") 
+#如果输入的是域名，利用Nslookup来获取IP
+if [ $g -gt 97 ] && [ $g -lt 122 ]; then
+	domain=$var
 	nslookup $domain | awk '{print $2}' | tail -n 2 > /tmp/nslookup.txt
 	ip=$(cat /tmp/nslookup.txt)
 else
-	ip=$OPTARG
+#如果输入的是IP，则直接将输入赋值给变量ip
+       	ip=$OPTARG
 fi
-
+      
+#获取协议参数
 getopts ":p:" opt1
 protocal=$OPTARG
+#获取端口参数
 getopts ":t:" opt2 
 port=$OPTARG
+#获取功能参数，增加规则还是删除规则
+getopts ":f:" opt3
+f=$OPTARG
 
-iptables -I OUTPUT -p $protocal -d $ip --dport $port -j ACCEPT
-iptables -I INPUT -p $protocal -s $ip --sport $port -j ACCEPT 
-rm -rf /tmp/nslookup.txt
+if [ $f == 'i' ];then
+#调用Iptables命令来完成规则的添加，此处可自行定义规则，以实现不同的功能，以下仅为示例
+	iptables -A INPUT -p $protocal -d $ip --dport $port -j ACCEPT 
+	iptables -A OUTPUT -p $protocal -s $ip --sport $port -j ACCEPT
+	rm -rf /tmp/nslookup.txt
+elif [ $f == 'd' ];then
+	iptables -D INPUT -p $protocal -d $ip --dport $port -j ACCEPT 
+	iptables -D OUTPUT -p $protocal -s $ip --sport $port -j ACCEPT
+ 	rm -rf /tmp/nslookup.txt
+ fi
